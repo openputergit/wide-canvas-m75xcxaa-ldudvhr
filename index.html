@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BudgetTrack Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .neu-brutal {
+            border: 3px solid #000;
+            box-shadow: 5px 5px 0px #000;
+        }
+        .neu-brutal-btn {
+            border: 2px solid #000;
+            box-shadow: 3px 3px 0px #000;
+            transition: all 0.2s;
+        }
+        .neu-brutal-btn:active {
+            box-shadow: 1px 1px 0px #000;
+            transform: translate(2px, 2px);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-yellow-50 min-h-screen p-4">
+    <!-- Header -->
+    <header class="mb-8">
+        <h1 class="text-4xl font-bold text-center neu-brutal bg-white p-4 rounded">BudgetTrack Pro</h1>
+    </header>
+
+    <!-- Main Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Balance Card -->
+        <div class="neu-brutal bg-white p-6 rounded">
+            <h2 class="text-2xl font-bold mb-4">Current Balance</h2>
+            <p class="text-3xl font-bold text-green-600" id="totalBalance">₹0</p>
+            <div class="mt-4 flex justify-between">
+                <span>Income: <span class="text-green-600" id="totalIncome">₹0</span></span>
+                <span>Expenses: <span class="text-red-600" id="totalExpenses">₹0</span></span>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="neu-brutal bg-white p-6 rounded">
+            <h2 class="text-2xl font-bold mb-4">Quick Actions</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="showModal('incomeModal')" class="neu-brutal-btn bg-green-400 p-3 rounded font-bold">
+                    <i class="bi bi-plus-circle"></i> Add Income
+                </button>
+                <button onclick="showModal('expenseModal')" class="neu-brutal-btn bg-red-400 p-3 rounded font-bold">
+                    <i class="bi bi-dash-circle"></i> Add Expense
+                </button>
+            </div>
+        </div>
+
+        <!-- Savings Goals -->
+        <div class="neu-brutal bg-white p-6 rounded">
+            <h2 class="text-2xl font-bold mb-4">Savings Goals</h2>
+            <div id="goalsList" class="space-y-4"></div>
+            <button onclick="showModal('goalModal')" class="neu-brutal-btn bg-blue-400 p-3 rounded font-bold w-full mt-4">
+                <i class="bi bi-flag"></i> Add New Goal
+            </button>
+        </div>
+
+        <!-- Transactions -->
+        <div class="neu-brutal bg-white p-6 rounded lg:col-span-2">
+            <h2 class="text-2xl font-bold mb-4">Recent Transactions</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b-2 border-black">
+                            <th class="text-left p-2">Date</th>
+                            <th class="text-left p-2">Category</th>
+                            <th class="text-left p-2">Description</th>
+                            <th class="text-right p-2">Amount</th>
+                            <th class="text-center p-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="neu-brutal bg-white p-6 rounded">
+            <h2 class="text-2xl font-bold mb-4">Expense Analysis</h2>
+            <canvas id="expenseChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Income Modal -->
+    <div id="incomeModal" class="modal">
+        <div class="bg-white neu-brutal p-6 rounded w-11/12 md:w-1/2 mx-auto mt-20">
+            <h2 class="text-2xl font-bold mb-4">Add Income</h2>
+            <form id="incomeForm" class="space-y-4">
+                <div>
+                    <label class="block font-bold">Amount</label>
+                    <input type="number" class="w-full p-2 neu-brutal" required name="amount">
+                </div>
+                <div>
+                    <label class="block font-bold">Category</label>
+                    <select class="w-full p-2 neu-brutal" required name="category">
+                        <option value="salary">Salary</option>
+                        <option value="business">Business</option>
+                        <option value="freelance">Freelance</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold">Description</label>
+                    <input type="text" class="w-full p-2 neu-brutal" required name="description">
+                </div>
+                <div>
+                    <label class="block font-bold">Date</label>
+                    <input type="date" class="w-full p-2 neu-brutal" required name="date">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal('incomeModal')" class="neu-brutal-btn bg-gray-400 p-2 rounded">Cancel</button>
+                    <button type="submit" class="neu-brutal-btn bg-green-400 p-2 rounded">Add Income</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div id="expenseModal" class="modal">
+        <div class="bg-white neu-brutal p-6 rounded w-11/12 md:w-1/2 mx-auto mt-20">
+            <h2 class="text-2xl font-bold mb-4">Add Expense</h2>
+            <form id="expenseForm" class="space-y-4">
+                <div>
+                    <label class="block font-bold">Amount</label>
+                    <input type="number" class="w-full p-2 neu-brutal" required name="amount">
+                </div>
+                <div>
+                    <label class="block font-bold">Category</label>
+                    <select class="w-full p-2 neu-brutal" required name="category">
+                        <option value="food">Food</option>
+                        <option value="rent">Rent</option>
+                        <option value="transportation">Transportation</option>
+                        <option value="utilities">Utilities</option>
+                        <option value="entertainment">Entertainment</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold">Description</label>
+                    <input type="text" class="w-full p-2 neu-brutal" required name="description">
+                </div>
+                <div>
+                    <label class="block font-bold">Date</label>
+                    <input type="date" class="w-full p-2 neu-brutal" required name="date">
+                </div>
+                <div>
+                    <label class="block font-bold">Receipt Image (Optional)</label>
+                    <input type="file" accept="image/*" class="w-full p-2" name="receipt">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal('expenseModal')" class="neu-brutal-btn bg-gray-400 p-2 rounded">Cancel</button>
+                    <button type="submit" class="neu-brutal-btn bg-red-400 p-2 rounded">Add Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Goal Modal -->
+    <div id="goalModal" class="modal">
+        <div class="bg-white neu-brutal p-6 rounded w-11/12 md:w-1/2 mx-auto mt-20">
+            <h2 class="text-2xl font-bold mb-4">Add Savings Goal</h2>
+            <form id="goalForm" class="space-y-4">
+                <div>
+                    <label class="block font-bold">Goal Name</label>
+                    <input type="text" class="w-full p-2 neu-brutal" required name="name">
+                </div>
+                <div>
+                    <label class="block font-bold">Target Amount</label>
+                    <input type="number" class="w-full p-2 neu-brutal" required name="target">
+                </div>
+                <div>
+                    <label class="block font-bold">Target Date</label>
+                    <input type="date" class="w-full p-2 neu-brutal" required name="date">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal('goalModal')" class="neu-brutal-btn bg-gray-400 p-2 rounded">Cancel</button>
+                    <button type="submit" class="neu-brutal-btn bg-blue-400 p-2 rounded">Add Goal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize state
+        let state = {
+            transactions: [],
+            goals: [],
+            categories: {
+                income: ['salary', 'business', 'freelance', 'other'],
+                expense: ['food', 'rent', 'transportation', 'utilities', 'entertainment', 'other']
+            }
+        };
+
+        // Load data from localStorage on startup
+        function initializeApp() {
+            const savedState = localStorage.getItem('budgetAppState');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            }
+            updateUI();
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            localStorage.setItem('budgetAppState', JSON.stringify(state));
+        }
+
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Form handlers
+        document.getElementById('incomeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const income = {
+                type: 'income',
+                amount: parseFloat(formData.get('amount')),
+                category: formData.get('category'),
+                description: formData.get('description'),
+                date: formData.get('date'),
+                id: Date.now()
+            };
+            state.transactions.push(income);
+            saveState();
+            updateUI();
+            closeModal('incomeModal');
+            e.target.reset();
+        });
+
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const expense = {
+                type: 'expense',
+                amount: -parseFloat(formData.get('amount')),
+                category: formData.get('category'),
+                description: formData.get('description'),
+                date: formData.get('date'),
+                id: Date.now()
+            };
+
+            const receiptFile = formData.get('receipt');
+            if (receiptFile.size > 0) {
+                // Here you would typically upload the file to your storage
+                // For now, we'll just add a placeholder URL
+                expense.receiptUrl = URL.createObjectURL(receiptFile);
+            }
+
+            state.transactions.push(expense);
+            saveState();
+            updateUI();
+            closeModal('expenseModal');
+            e.target.reset();
+        });
+
+        document.getElementById('goalForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const goal = {
+                name: formData.get('name'),
+                target: parseFloat(formData.get('target')),
+                date: formData.get('date'),
+                current: 0,
+                id: Date.now()
+            };
+            state.goals.push(goal);
+            saveState();
+            updateUI();
+            closeModal('goalModal');
+            e.target.reset();
+        });
+
+        // Update UI functions
+        function updateUI() {
+            updateBalances();
+            updateTransactionsList();
+            updateGoalsList();
+            updateChart();
+        }
+
+        function updateBalances() {
+            const totalIncome = state.transactions
+                .filter(t => t.type === 'income')
+                .reduce((sum, t) => sum + t.amount, 0);
+            
+            const totalExpenses = state.transactions
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            
+            const balance = totalIncome - totalExpenses;
+
+            document.getElementById('totalIncome').textContent = `₹${totalIncome.toFixed(2)}`;
+            document.getElementById('totalExpenses').textContent = `₹${totalExpenses.toFixed(2)}`;
+            document.getElementById('totalBalance').textContent = `₹${balance.toFixed(2)}`;
+        }
+
+        function updateTransactionsList() {
+            const tbody = document.getElementById('transactionsList');
+            tbody.innerHTML = '';
+            
+            state.transactions
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .forEach(transaction => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-gray-200';
+                    tr.innerHTML = `
+                        <td class="p-2">${new Date(transaction.date).toLocaleDateString()}</td>
+                        <td class="p-2 capitalize">${transaction.category}</td>
+                        <td class="p-2">${transaction.description}</td>
+                        <td class="p-2 text-right ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+                            ₹${Math.abs(transaction.amount).toFixed(2)}
+                        </td>
+                        <td class="p-2 text-center">
+                            <button onclick="deleteTransaction(${transaction.id})" class="neu-brutal-btn bg-red-400 p-1 rounded">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+        }
+
+        function updateGoalsList() {
+            const goalsList = document.getElementById('goalsList');
+            goalsList.innerHTML = '';
+
+            state.goals.forEach(goal => {
+                const progress = (goal.current / goal.target) * 100;
+                const div = document.createElement('div');
+                div.className = 'neu-brutal bg-gray-100 p-4 rounded';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold">${goal.name}</h3>
+                        <button onclick="deleteGoal(${goal.id})" class="text-red-600">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </div>
+                    <div class="relative pt-1">
+                        <div class="flex mb-2 items-center justify-between">
+                            <div>
+                                <span class="text-xs font-semibold inline-block text-blue-600">
+                                    ₹${goal.current.toFixed(2)} / ₹${goal.target.toFixed(2)}
+                                </span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-semibold inline-block text-blue-600">
+                                    ${progress.toFixed(1)}%
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex h-2 mb-4 overflow-hidden bg-gray-200 rounded">
+                            <div style="width: ${progress}%" class="neu-brutal bg-blue-400"></div>
+                        </div>
+                        <div class="text-xs text-gray-600">
+                            Target Date: ${new Date(goal.date).toLocaleDateString()}
+                        </div>
+                    </div>
+                `;
+                goalsList.appendChild(div);
+            });
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const expensesByCategory = {};
+            
+            state.transactions
+                .filter(t => t.type === 'expense')
+                .forEach(t => {
+                    expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + Math.abs(t.amount);
+                });
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(expensesByCategory),
+                    datasets: [{
+                        data: Object.values(expensesByCategory),
+                        backgroundColor: [
+                            '#FF6384',
+                            '#36A2EB',
+                            '#FFCE56',
+                            '#4BC0C0',
+                            '#9966FF',
+                            '#FF9F40'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function deleteTransaction(id) {
+            state.transactions = state.transactions.filter(t => t.id !== id);
+            saveState();
+            updateUI();
+        }
+
+        function deleteGoal(id) {
+            state.goals = state.goals.filter(g => g.id !== id);
+            saveState();
+            updateUI();
+        }
+
+        // Initialize the app
+        initializeApp();
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.getElementsByClassName('modal');
+            for (let modal of modals) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
